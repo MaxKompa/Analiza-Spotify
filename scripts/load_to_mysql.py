@@ -18,4 +18,4 @@ df.to_sql(
     index=False
 )
 
-print("Данные загружены в MySQL!")
+print("Dane zostały załadowane do bazy danych MySQL!")

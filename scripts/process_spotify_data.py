@@ -21,4 +21,4 @@ df.to_csv(
     index=False
 )
 
-print("Обработка завершена!")
+print("Przetwarzanie zakończone!")
