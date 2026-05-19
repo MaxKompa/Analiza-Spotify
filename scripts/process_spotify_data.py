@@ -1,24 +1,54 @@
 ﻿import pandas as pd
+import os
 
-df = pd.read_csv("../data/raw/dataset.csv")
+def process_file(input_path):
+    try:
+        df = pd.read_csv(input_path, encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv(input_path, encoding="latin1")
+    
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 
-print(df.head())
+    df.drop_duplicates(inplace=True)
+    df.dropna(inplace=True)
 
-print(df.info())
+    popularity_column = None
 
-df.drop_duplicates(inplace=True)
+    possible_names = [
+        "popularity",
+        "track_popularity",
+        "score",
+        "rating"
+    ]
 
-df.dropna(inplace=True)
+    for col in df.columns:
+        if col.lower() in possible_names:
+            popularity_column = col
+            break
 
-df['popularity_category'] = pd.cut(
-    df['popularity'],
-    bins=[0, 40, 70, 100],
-    labels=['Low', 'Medium', 'High']
-)
+    if popularity_column is None:
+        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
 
-df.to_csv(
-    "../data/processed/clean_spotify_tracks.csv",
-    index=False
-)
+        for col in numeric_cols:
+            if df[col].min() >= 0 and df[col].max() <= 100:
+                popularity_column = col
+                break
 
-print("Przetwarzanie zakończone!")
+    if popularity_column:
+        df['category'] = pd.cut(
+            df[popularity_column],
+            bins=[0, 40, 70, 100],
+            labels=['Low', 'Medium', 'High']
+        )
+        print(f"Wykorzystano kolumnę: {popularity_column}")
+    else:
+        print("Nie znaleziono odpowiedniej kolumny, pominięto kategoryzację")
+
+    os.makedirs("../data/processed", exist_ok=True)
+
+    output_path = "../data/processed/clean_data.csv"
+    df.to_csv(output_path, index=False)
+
+    print("Przetwarzanie zakończone:", output_path)
+
+    return output_path
